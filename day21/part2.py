@@ -1,55 +1,56 @@
 # get the input numbers
-with open("test.txt") as f:
+with open("input.txt") as f:
     entries = f.read().splitlines()
 
+number_of_players = 2
+score_to_win = 21
 die_size = 3
+
 position = []
 for i, e in enumerate(entries):
     e = e.split()
     position.append(int(e[-1]))
 
 
-class Dice:
-    def __init__(self, sides):
-        self.sides = sides
-        self.rolls = 0
-        self.value = 0
+# create a dictionary with all possible values of the sum of three dice rolls
+# this will allow us to run every sum only once instead of up to 7(!) times
+die_list = []
+die_sum = {}
+for i in range(1, die_size + 1):
+    for j in range(1, die_size + 1):
+        for k in range(1, die_size + 1):
+            die_list.append(i + j + k)
+print(die_list)
+for value in set(die_list):
+    die_sum[value] = die_list.count(value)
+print(die_sum)
 
-    def roll(self):
-        self.rolls += 1
-        self.value = (self.value % self.sides) + 1
-        return self.value
 
-    def total_rolls(self):
-        return self.rolls
+def next_roll(score, pos, player, val):
+    pos[player] = (pos[player] + val) % 10
+    if pos[player] == 0:
+        pos[player] = 10
 
-
-def next_roll(score, pos, next_player, roll):
-    pos[next_player] = (pos[next_player] + roll) % 10
-    if pos[next_player] == 0:
-        pos[next_player] = 10
-    score[next_player] += pos[next_player]
-    print(f"Player {next_player + 1} rolls ", end="")
-    print(roll, sep="+", end="")
-    print(f" and moves to space {pos[next_player]} for a total score of {score[next_player]}.")
-
-    if score[next_player] >= 6:
-        print(f"Player {next_player + 1} wins the game with a score of {score[next_player]}")
-        if next_player == 0:
+    score[player] += pos[player]
+    # print(f"Player {player + 1} rolls {val} and moves to space {pos[player]} for a score of {score[player]}.")
+    if score[player] >= score_to_win:
+        # print(f"Player {player + 1} wins")
+        if player == 0:
             return 1, 0
         else:
             return 0, 1
     else:
-        next_player = (next_player + 1) % 2
-        first = next_roll(score.copy(), pos.copy(), next_player, 1)
-        second = next_roll(score.copy(), pos.copy(), next_player, 2)
-        third = next_roll(score.copy(), pos.copy(), next_player, 3)
-        print([sum(x) for x in zip(first, second, third)])
-        return [sum(x) for x in zip(first, second, third)]
+        player = (player + 1) % number_of_players
+
+    results = []
+    for key, count in die_sum.items():
+        result = next_roll(score.copy(), pos.copy(), player, key)
+        results.append([count * x for x in result])
+    return [sum(x) for x in zip(*results)]
 
 
 total = []
-for i in range(1, die_size + 1):
-    total.append(next_roll([0, 0], position, 0, i))
-print()
+for k, v in die_sum.items():
+    res = next_roll([0, 0], position.copy(), 0, k)
+    total.append([v * x for x in res])
 print([sum(x) for x in zip(*total)])
